@@ -2,7 +2,12 @@
 #' @import MASS
 #' @import ncvreg
 #' @import Matrix
-#' @return
+#' @return A list with components: \code{Sest}, the estimated p*r loading
+#'   matrix; \code{Qest}, the estimated p*r sparse group loading matrix;
+#'   \code{objvalue}, a length-r vector of objective values per component;
+#'   \code{obj0}, the overall objective value; \code{niters}, the number of
+#'   iterations used by the final component; and \code{lambda1}, \code{lambda2},
+#'   the tuning parameters used.
 #' @export
 #' @param Shat the traditional estimator: a p*r matrix
 #' @param r number of factors
@@ -10,7 +15,8 @@
 
 
 SparseGroupFM <- function(Shat, r, group, penalty ="MCP",
-                          lambda1, lambda2, rho1 = 1, rho2 = 1, gam = 3,
+                          lambda1, lambda2, varimaxS,
+                          rho1 = 1, rho2 = 1, gam = 3,
                           niters = 1000, tol = 1e-6)
 {
   p <- nrow(Shat)
@@ -27,8 +33,6 @@ SparseGroupFM <- function(Shat, r, group, penalty ="MCP",
   ### q0 for first component ###
   if(r>=2)
   {
-    varimaxS <- unclass(varimax(Shat)$loadings)
-    varimaxS <- varimaxS[,sort(colSums(abs(varimaxS)), index.return = TRUE)$ix]
     q0 <- varimaxS[,1]
   }else{
     q0 <- Shat[,1]
@@ -179,7 +183,11 @@ seqfunQ_sparse <- function(G, B, p, q0, group_vec, lam1, lam2,
 #' @import MASS
 #' @import ncvreg
 #' @import Matrix
-#' @return
+#' @return A list with components: \code{fit}, the \code{SparseGroupFM} fit at
+#'   the BIC-selected lambda; \code{bic}, a data frame of \code{lambda},
+#'   \code{npara} (number of nonzero parameters) and \code{bic} values over the
+#'   lambda grid; \code{lambda}, the lambda grid supplied; and \code{lammin},
+#'   the lambda value minimizing BIC.
 #' @export
 #' @param ym n*p time series
 #' @param r number of factors
@@ -196,6 +204,9 @@ SparseGroupFM_bic1 <- function(ym, r, group, lamvec)
   Mhat <- estCov(ym, 1)
   Shat <- as.matrix(eigen(Mhat)$vectors[,1:r])
 
+  varimaxS <- unclass(varimax(Shat)$loadings)
+  varimaxS <- varimaxS[,sort(colSums(abs(varimaxS)), index.return = TRUE)$ix]
+
   nlam1 <- length(lamvec)
   bic1 <- rep(0, nlam1)
   loss1 <- rep(0, nlam1)
@@ -204,19 +215,21 @@ SparseGroupFM_bic1 <- function(ym, r, group, lamvec)
   for(i in 1:nlam1)
   {
     resi <- SparseGroupFM(Shat = Shat, r = r, group = group,
-                          lambda1 = lamvec[i], lambda2 = lamvec[i])
-    if(mean(round(abs(resi$Qest),5)>0) >0)
+                          lambda1 = lamvec[i], lambda2 = lamvec[i],
+                          varimaxS = varimaxS)
+    if(mean(round(abs(resi$Qest),10)>0) >0)
     {
-      predi <- predfun_sparse(resi,ym)
+      predi <- fittedfun(resi$Qest,ym)
       loss1[i] <- mean((ym - predi)^2)
-      param1[i] <- sum(round(resi$Qest,5)!=0)
+      param1[i] <- sum(round(resi$Qest,10)!=0)
       bic1[i] <- log(loss1[i]) + param1[i]*log(n*p)/n/p
     }
     else{break}
   }
   lammin <- lamvec[which.min(bic1)]
   res1 <- SparseGroupFM(Shat = Shat, r = r, group = group,
-                        lambda1 = lammin, lambda2 = lammin)
+                        lambda1 = lammin, lambda2 = lammin,
+                        varimaxS = varimaxS)
 
   bic <- data.frame(lambda = lamvec, npara = param1, bic = bic1)
   out <- list(fit = res1, bic = bic, lambda = lamvec, lammin = lammin)
@@ -228,7 +241,12 @@ SparseGroupFM_bic1 <- function(ym, r, group, lamvec)
 #' @import MASS
 #' @import ncvreg
 #' @import Matrix
-#' @return
+#' @return A list with components: \code{fit}, the \code{SparseGroupFM} fit at
+#'   the BIC-selected \code{lammin1} and \code{lammin2}; \code{bic1},
+#'   \code{bic2}, data frames of \code{lambda}, \code{npara} and \code{bic}
+#'   values for the two tuning steps; \code{lambda1}, \code{lambda2}, the lambda
+#'   grids supplied; and \code{lammin1}, \code{lammin2}, the selected lambda
+#'   values for the sparse and group penalties.
 #' @export
 #' @param ym n*p time series
 #' @param r number of factors
@@ -245,6 +263,9 @@ SparseGroupFM_bic2 <- function(ym, r, group, lamvec1, lamvec2)
   Mhat <- estCov(ym, 1)
   Shat <- as.matrix(eigen(Mhat)$vectors[,1:r])
 
+  varimaxS <- unclass(varimax(Shat)$loadings)
+  varimaxS <- varimaxS[,sort(colSums(abs(varimaxS)), index.return = TRUE)$ix]
+
 
   ### step 1
   nlam1 <- length(lamvec1)
@@ -255,7 +276,8 @@ SparseGroupFM_bic2 <- function(ym, r, group, lamvec1, lamvec2)
   for(i in 1:nlam1)
   {
     resi <- SparseGroupFM(Shat = Shat, r = r, group = group,
-                          lambda1 = lamvec1[i], lambda2 = 0)
+                          lambda1 = lamvec1[i], lambda2 = 0,
+                          varimaxS = varimaxS)
     if(mean(round(abs(resi$Qest),5)>0) >0)
     {
       predi <- fittedfun(resi$Qest,ym)
@@ -268,7 +290,8 @@ SparseGroupFM_bic2 <- function(ym, r, group, lamvec1, lamvec2)
   lammin1 <- lamvec1[which.min(bic1)]
 
   res1 <- SparseGroupFM(Shat = Shat, r = r, group = group,
-                        lambda1 = lammin1, lambda2 = 0)
+                        lambda1 = lammin1, lambda2 = 0,
+                        varimaxS = varimaxS)
 
 
   ### step 2
@@ -281,7 +304,8 @@ SparseGroupFM_bic2 <- function(ym, r, group, lamvec1, lamvec2)
   for(i in 1:nlam2)
   {
     resi <- SparseGroupFM(Shat = Shat, r = r, group = group,
-                          lambda1 = lammin1, lambda2 = lamvec2[i])
+                          lambda1 = lammin1, lambda2 = lamvec2[i],
+                          varimaxS = varimaxS)
     if(mean(round(abs(resi$Qest),5)>0) >0)
     {
       predi <- fittedfun(resi$Qest,ym)
@@ -295,7 +319,8 @@ SparseGroupFM_bic2 <- function(ym, r, group, lamvec1, lamvec2)
 
 
   res2 <- SparseGroupFM(Shat = Shat, r = r, group = group,
-                        lambda1 = lammin1, lambda2 = lammin2)
+                        lambda1 = lammin1, lambda2 = lammin2,
+                        varimaxS = varimaxS)
 
   bic1 <- data.frame(lambda = lamvec1, npara = param1, bic = bic1)
   bic2 <- data.frame(lambda = lamvec2, npara = param2, bic = bic2)

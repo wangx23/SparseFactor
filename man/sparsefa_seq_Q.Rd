@@ -9,6 +9,7 @@ sparsefa_seq_Q(
   r,
   penalty = "MCP",
   lambda,
+  varimaxQ,
   rho = 1,
   niters = 1000,
   tol1 = 1e-06,
@@ -16,11 +17,19 @@ sparsefa_seq_Q(
 )
 }
 \arguments{
+\item{Qt}{the traditional estimator: a p*r matrix}
+
 \item{r}{number of factors}
 
 \item{lambda}{a given lambda value}
-
-\item{Shat}{the traditional estimator: a p*r matrix}
+}
+\value{
+A list with components: \code{Sest}, the estimated p*r loading
+matrix; \code{Qest}, the estimated sparse loading matrix with
+all-zero columns dropped; \code{objvalue}, a length-r vector of objective
+values per component; \code{obj0}, the overall objective value;
+\code{niters}, the number of iterations used by the final component; and
+\code{lambda}, the tuning parameter used.
 }
 \description{
 Sparse factor models

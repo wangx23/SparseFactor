@@ -15,6 +15,13 @@ SparseGroupFM_bic1(ym, r, group, lamvec)
 
 \item{lamvec}{a vector of lambda value}
 }
+\value{
+A list with components: \code{fit}, the \code{SparseGroupFM} fit at
+the BIC-selected lambda; \code{bic}, a data frame of \code{lambda},
+\code{npara} (number of nonzero parameters) and \code{bic} values over the
+lambda grid; \code{lambda}, the lambda grid supplied; and \code{lammin},
+the lambda value minimizing BIC.
+}
 \description{
 Sparse Group Factor models based on BIC, same lambda for two tuning
 }

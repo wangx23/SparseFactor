@@ -4,7 +4,7 @@
 \alias{sparsefa_seq_bic}
 \title{Sparse factor models using bic}
 \usage{
-sparsefa_seq_bic(ym, r, lambda)
+sparsefa_seq_bic(ym, r, lambda, h0 = 1, penalty = "MCP")
 }
 \arguments{
 \item{ym}{a n*p time series matrix}
@@ -12,6 +12,8 @@ sparsefa_seq_bic(ym, r, lambda)
 \item{r}{number of factors}
 
 \item{lambda}{a vector of pre-defined lambda value}
+
+\item{penalty}{penalty option in ncvreg, can be MCP, SCAD, lasso}
 }
 \description{
 Sparse factor models using bic

@@ -17,6 +17,14 @@ SparseGroupFM_bic2(ym, r, group, lamvec1, lamvec2)
 
 \item{lamvec2}{a vector of lambda value for group}
 }
+\value{
+A list with components: \code{fit}, the \code{SparseGroupFM} fit at
+the BIC-selected \code{lammin1} and \code{lammin2}; \code{bic1},
+\code{bic2}, data frames of \code{lambda}, \code{npara} and \code{bic}
+values for the two tuning steps; \code{lambda1}, \code{lambda2}, the lambda
+grids supplied; and \code{lammin1}, \code{lammin2}, the selected lambda
+values for the sparse and group penalties.
+}
 \description{
 Sparse Group Factor models based on BIC, two lambda, tuning separately. First fix lam2 as 0, and choose lam1 first, then choose lam2
 }

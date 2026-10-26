@@ -11,6 +11,7 @@ SparseGroupFM(
   penalty = "MCP",
   lambda1,
   lambda2,
+  varimaxS,
   rho1 = 1,
   rho2 = 1,
   gam = 3,
@@ -24,6 +25,14 @@ SparseGroupFM(
 \item{r}{number of factors}
 
 \item{group}{a p*r matrix, to indicate the group structure for each loading}
+}
+\value{
+A list with components: \code{Sest}, the estimated p\emph{r loading
+matrix; \code{Qest}, the estimated p}r sparse group loading matrix;
+\code{objvalue}, a length-r vector of objective values per component;
+\code{obj0}, the overall objective value; \code{niters}, the number of
+iterations used by the final component; and \code{lambda1}, \code{lambda2},
+the tuning parameters used.
 }
 \description{
 Sparse Group Factor models
